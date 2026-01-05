@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Калькулятор ЗП</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Montserrat', sans-serif; }
+
+        /* Глобально: минимализм без скроллбаров/выделения/приближения */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            scrollbar-width: none;           /* Firefox */
+            -ms-overflow-style: none;        /* IE/Edge legacy */
+        }
+        *::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            -webkit-text-size-adjust: 100%;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: pan-x pan-y; /* отключает pinch-zoom, но сохраняет скролл */
+        }
+
+        input, textarea, select {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+        
+        /* Единый радиус скругления */
+        :root {
+            --radius: 14px;
+        }
+        
+        .day-cell { touch-action: manipulation; user-select: none; }
+        .work-day { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .overtime-day { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .day-cell:active { transform: scale(0.92); }
+        .day-cell.work-day:active { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .day-cell.overtime-day:active { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .day-cell:not(.work-day):not(.overtime-day):active { background: #52525b; }
+        
+        /* Базовые отступы календаря */
+        .calendar-grid {
+            gap: 8px;
+        }
+        .weekday-row {
+            gap: 8px;
+        }
+        
+        /* Стили для ячеек */
+        .day-cell {
+            min-height: 42px;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Увеличенные ячейки для мобильных устройств */
+        @media (max-width: 640px) {
+            .day-cell {
+                min-height: 46px;
+                font-size: 0.95rem;
+            }
+            .calendar-grid, .weekday-row {
+                gap: 6px;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .day-cell {
+                min-height: 42px;
+                font-size: 0.9rem;
+            }
+            .calendar-grid, .weekday-row {
+                gap: 5px;
+            }
+        }
+        
+        /* Уведомления */
+        .toast {
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+        
+        /* Единые стили для кнопок */
+        .btn {
+            height: 48px;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        /* Единые стили для полей ввода */
+        .input-field {
+            height: 48px;
+            border-radius: var(--radius);
+            padding: 0 16px;
+        }
+        
+        /* Единые стили для карточек */
+        .card {
+            border-radius: var(--radius);
+        }
+        
+        /* Стили для шаблонов */
+        .template-item {
+            transition: all 0.2s ease;
+        }
+        .template-item:active {
+            transform: scale(0.98);
+        }
+
+        /* Внутренняя обводка (не режется контейнерами с overflow) */
+        .template-selected {
+            box-shadow: inset 0 0 0 2px #f59e0b;
+            background: rgba(63, 63, 70, 0.75) !important; /* zinc-700-ish */
+        }
+
+        /* Тема: светлая (по умолчанию тёмная) */
+        body.theme-light {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        body.theme-light .bg-zinc-950 { background-color: #f8fafc !important; }
+        body.theme-light .bg-zinc-900 { background-color: #ffffff !important; }
+        body.theme-light .bg-zinc-800 { background-color: #f1f5f9 !important; }
+        body.theme-light .bg-zinc-800\/50 { background-color: rgba(241, 245, 249, 0.6) !important; }
+        body.theme-light .border-zinc-800 { border-color: #e2e8f0 !important; }
+        body.theme-light .border-zinc-700 { border-color: #cbd5e1 !important; }
+        body.theme-light .text-zinc-100 { color: #0f172a !important; }
+        body.theme-light .text-zinc-300 { color: #334155 !important; }
+        body.theme-light .text-zinc-400 { color: #475569 !important; }
+        body.theme-light .text-zinc-500 { color: #64748b !important; }
+        body.theme-light .placeholder-zinc-500::placeholder { color: #94a3b8 !important; }
+
+        /* Поля ввода/селекты в светлой теме */
+        body.theme-light input,
+        body.theme-light select {
+            color: #0f172a !important;
+        }
+
+        body.theme-light .day-cell:not(.work-day):not(.overtime-day):active { background: #cbd5e1; }
+        body.theme-light .template-selected { background: rgba(226, 232, 240, 0.9) !important; }
+
+        /* Градиент карточки итогов в светлой теме */
+        body.theme-light .from-zinc-900.to-zinc-800 {
+            --tw-gradient-from: #ffffff !important;
+            --tw-gradient-to: #f1f5f9 !important;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+    <!-- Контейнер для уведомлений -->
+    <div id="toastContainer" class="fixed top-4 left-4 right-4 z-[100] flex flex-col items-center gap-2 pointer-events-none"></div>
+
+    <!-- Модальное окно настроек -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 card p-6 w-full max-w-sm border border-zinc-800 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 id="settingsTitle" class="text-xl font-semibold">Настройки</h2>
+                <button id="closeSettingsBtn" onclick="closeSettings()" class="btn-icon text-zinc-400 hover:text-white hover:bg-zinc-800 hidden">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-sm text-zinc-400 mb-2 block">Базовая ставка в час (₽) *</label>
+                    <input type="number" id="hourlyRate" placeholder="Введите ставку" 
+                        class="input-field w-full bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition">
+                    <p id="settingsHint" class="text-xs text-zinc-500 mt-2 hidden">Укажите ставку в час, чтобы начать отмечать дни в календаре.</p>
+                </div>
+                <div id="settingsAdvanced" class="space-y-4">
+                    <div>
+                        <label class="text-sm text-zinc-400 mb-2 block">Часов в день</label>
+                        <input type="number" id="hoursPerDay" placeholder="12" 
+                            class="input-field w-full bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition">
+                    </div>
+
+                    <!-- Шаблоны должностей -->
+                    <div class="pt-4 border-t border-zinc-800">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="text-sm text-zinc-400">Шаблоны подработок</label>
+                            <button onclick="openAddTemplate()" class="text-blue-400 hover:text-blue-300 text-sm font-medium flex items-center gap-1">
+                                <span class="material-icons-round text-lg">add</span>
+                                Добавить
+                            </button>
+                        </div>
+                        <div id="templatesList" class="space-y-2">
+                            <!-- Шаблоны будут здесь -->
+                        </div>
+                    </div>
+                </div>
+
+                <button id="settingsSaveBtn" onclick="saveSettings()" 
+                    class="btn w-full bg-blue-600 hover:bg-blue-500 text-white font-medium mt-2">
+                    Сохранить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления шаблона -->
+    <div id="addTemplateModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 card p-6 w-full max-w-sm border border-zinc-800">
+            <div class="flex items-center justify-between mb-6">
+                <h2 id="addTemplateTitle" class="text-xl font-semibold">Новый шаблон</h2>
+                <button onclick="closeAddTemplate()" class="btn-icon text-zinc-400 hover:text-white hover:bg-zinc-800">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-sm text-zinc-400 mb-2 block">Название</label>
+                    <input type="text" id="templateName" placeholder="Например: Ночная смена" 
+                        class="input-field w-full bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <div>
+                    <label class="text-sm text-zinc-400 mb-2 block">Ставка в час (₽)</label>
+                    <input type="number" id="templateRate" placeholder="Введите ставку" 
+                        class="input-field w-full bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <button id="templateSaveBtn" onclick="addTemplate()" 
+                    class="btn w-full bg-blue-600 hover:bg-blue-500 text-white font-medium mt-2">
+                    Добавить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно выбора подработки -->
+    <div id="overtimeModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 card p-6 w-full max-w-sm border border-zinc-800">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold">Подработка</h2>
+                <button onclick="closeOvertimeModal()" class="btn-icon text-zinc-400 hover:text-white hover:bg-zinc-800">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-sm text-zinc-400 mb-2 block">Выберите шаблон</label>
+                    <div id="overtimeTemplatesList" class="space-y-2 max-h-48 overflow-y-auto">
+                        <!-- Шаблоны будут здесь -->
+                    </div>
+                </div>
+                <div>
+                    <label class="text-sm text-zinc-400 mb-2 block">Количество часов</label>
+                    <input type="number" id="overtimeHours" placeholder="12" 
+                        class="input-field w-full bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <button onclick="confirmOvertime()" 
+                    class="btn w-full bg-amber-600 hover:bg-amber-500 text-white font-medium mt-2">
+                    Добавить подработку
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основной контент -->
+    <div class="max-w-lg mx-auto p-4 pb-8">
+        <!-- Шапка -->
+        <header class="flex items-center justify-between py-4 mb-4">
+            <h1 class="text-2xl font-bold">Зарплата</h1>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleThemeQuick()" class="btn-icon bg-zinc-900 hover:bg-zinc-800 border border-zinc-800" aria-label="Переключить тему">
+                    <span id="themeToggleIcon" class="material-icons-round">dark_mode</span>
+                </button>
+                <button onclick="openSettings()" class="btn-icon bg-zinc-900 hover:bg-zinc-800 border border-zinc-800" aria-label="Настройки">
+                    <span class="material-icons-round">settings</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Навигация по месяцам -->
+        <div class="flex items-center justify-between mb-4">
+            <button onclick="prevMonth()" class="btn-icon bg-zinc-900 hover:bg-zinc-800 border border-zinc-800">
+                <span class="material-icons-round">chevron_left</span>
+            </button>
+            <h2 id="currentMonth" class="text-lg font-semibold"></h2>
+            <button onclick="nextMonth()" class="btn-icon bg-zinc-900 hover:bg-zinc-800 border border-zinc-800">
+                <span class="material-icons-round">chevron_right</span>
+            </button>
+        </div>
+
+        <!-- Календарь -->
+        <div class="bg-zinc-900 card p-4 border border-zinc-800">
+            <!-- Дни недели -->
+            <div class="weekday-row grid grid-cols-7 mb-3">
+                <div class="text-center text-xs text-zinc-500 py-2 font-medium">Пн</div>
+                <div class="text-center text-xs text-zinc-500 py-2 font-medium">Вт</div>
+                <div class="text-center text-xs text-zinc-500 py-2 font-medium">Ср</div>
+                <div class="text-center text-xs text-zinc-500 py-2 font-medium">Чт</div>
+                <div class="text-center text-xs text-zinc-500 py-2 font-medium">Пт</div>
+                <div class="text-center text-xs text-zinc-500 py-2 font-medium">Сб</div>
+                <div class="text-center text-xs text-zinc-500 py-2 font-medium">Вс</div>
+            </div>
+            <!-- Дни месяца -->
+            <div id="calendarGrid" class="calendar-grid grid grid-cols-7"></div>
+        </div>
+
+        <!-- Подсказка -->
+        <div class="flex justify-center gap-6 mt-4 text-xs text-zinc-500">
+            <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+                <span>Тап — рабочий</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+                <span>Долгий — подработка</span>
+            </div>
+        </div>
+
+        <!-- Кнопка сброса -->
+        <button onclick="clearMonth()" 
+            class="btn w-full mt-4 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-medium border border-zinc-800">
+            <span class="material-icons-round text-xl mr-2">restart_alt</span>
+            Сбросить месяц
+        </button>
+
+        <!-- Карточка зарплаты -->
+        <div class="bg-gradient-to-br from-zinc-900 to-zinc-800 card p-5 mt-6 border border-zinc-800">
+            <div class="text-center mb-4">
+                <p class="text-zinc-400 text-sm mb-1">Итого за месяц</p>
+                <p id="totalSalary" class="text-3xl font-bold text-blue-400">0 ₽</p>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <div class="bg-zinc-800/50 card p-3 text-center">
+                    <p id="workDaysCount" class="text-xl font-bold text-blue-400">0</p>
+                    <p class="text-zinc-500 text-xs whitespace-nowrap">Рабочих</p>
+                </div>
+                <div class="bg-zinc-800/50 card p-3 text-center">
+                    <p id="overtimeDaysCount" class="text-xl font-bold text-amber-400">0</p>
+                    <p class="text-zinc-500 text-xs whitespace-nowrap">Подработок</p>
+                </div>
+                <div class="bg-zinc-800/50 card p-3 text-center">
+                    <p id="totalHours" class="text-xl font-bold text-zinc-300">0</p>
+                    <p class="text-zinc-500 text-xs whitespace-nowrap">Часов</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Состояние приложения
+        let currentDate = new Date();
+        let markedDays = {}; // { 'YYYY-MM-DD': { type: 'work' | 'overtime', templateId?: string, hours?: number } }
+        let settings = {
+            hourlyRate: null,
+            hoursPerDay: 12,
+            theme: 'dark' // 'dark' | 'light' | 'system'
+        };
+        let templates = []; // [{ id, name, rate }]
+        let longPressTimer = null;
+        let isLongPress = false;
+        let selectedDateKey = null;
+        let selectedTemplateId = null;
+        let editingTemplateId = null;
+        
+        // Для отслеживания скролла
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let isTouchMoved = false;
+        const SCROLL_THRESHOLD = 10;
+
+        // Запрет pinch-zoom (особенно Safari iOS)
+        ['gesturestart', 'gesturechange', 'gestureend'].forEach(evt => {
+            document.addEventListener(evt, (e) => e.preventDefault());
+        });
+
+        // Показ уведомлений
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const bgColor = type === 'success' ? 'bg-emerald-600' : 'bg-red-600';
+            const icon = type === 'success' ? 'check_circle' : 'error';
+            
+            toast.className = `toast ${bgColor} text-white px-4 py-3 card flex items-center gap-3 shadow-lg pointer-events-auto max-w-sm w-full`;
+            toast.innerHTML = `
+                <span class="material-icons-round">${icon}</span>
+                <span class="font-medium">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Тема
+        const themeMedia = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+        function getSystemTheme() {
+            if (!themeMedia) return 'dark';
+            return themeMedia.matches ? 'dark' : 'light';
+        }
+
+        function updateThemeToggleIcon() {
+            const icon = document.getElementById('themeToggleIcon');
+            if (!icon) return;
+
+            const resolved = (settings?.theme === 'system') ? getSystemTheme() : (settings?.theme || 'dark');
+            // Если активна светлая тема — показываем иконку солнца, иначе луны
+            icon.textContent = resolved === 'light' ? 'light_mode' : 'dark_mode';
+        }
+
+        function applyTheme(theme) {
+            const resolved = theme === 'system' ? getSystemTheme() : theme;
+            document.body.classList.toggle('theme-light', resolved === 'light');
+            updateThemeToggleIcon();
+        }
+
+        function toggleThemeQuick() {
+            // Быстрый переключатель только между dark/light.
+            // Если выбран system — переключаем в противоположную от текущей системной, чтобы было предсказуемо.
+            const resolved = (settings.theme === 'system') ? getSystemTheme() : (settings.theme || 'dark');
+            settings.theme = resolved === 'dark' ? 'light' : 'dark';
+            applyTheme(settings.theme);
+            saveData();
+        }
+
+        if (themeMedia) {
+            themeMedia.addEventListener('change', () => {
+                if (settings?.theme === 'system') {
+                    applyTheme('system');
+                }
+            });
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            applyTheme(settings.theme || 'dark');
+            updateThemeToggleIcon();
+            renderCalendar();
+            updateStats();
+            
+            // При первом запуске или без ставки - показываем настройки
+            if (!settings.hourlyRate) {
+                openSettings(true);
+            }
+        });
+
+        // Загрузка данных из localStorage
+        function loadData() {
+            const savedSettings = localStorage.getItem('salarySettings');
+            const savedDays = localStorage.getItem('markedDays');
+            const savedTemplates = localStorage.getItem('salaryTemplates');
+            
+            if (savedSettings) {
+                const parsed = JSON.parse(savedSettings);
+                settings = {
+                    hourlyRate: parsed.hourlyRate ?? null,
+                    hoursPerDay: parsed.hoursPerDay ?? 12,
+                    theme: parsed.theme ?? 'dark'
+                };
+            }
+            if (savedDays) {
+                markedDays = JSON.parse(savedDays);
+            }
+            if (savedTemplates) {
+                templates = JSON.parse(savedTemplates);
+            }
+        }
+
+        // Сохранение данных
+        function saveData() {
+            localStorage.setItem('salarySettings', JSON.stringify(settings));
+            localStorage.setItem('markedDays', JSON.stringify(markedDays));
+            localStorage.setItem('salaryTemplates', JSON.stringify(templates));
+        }
+
+        // Форматирование даты
+        function formatDateKey(year, month, day) {
+            return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        }
+
+        // Получение названия месяца
+        function getMonthName(date) {
+            const months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                           'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+            return `${months[date.getMonth()]} ${date.getFullYear()}`;
+        }
+
+        // Отрисовка календаря
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const monthLabel = document.getElementById('currentMonth');
+            
+            monthLabel.textContent = getMonthName(currentDate);
+            
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            
+            // Получаем день недели первого дня (0 = воскресенье)
+            let startDay = firstDay.getDay();
+            startDay = startDay === 0 ? 6 : startDay - 1; // Преобразуем в понедельник = 0
+            
+            grid.innerHTML = '';
+            
+            // Пустые ячейки до первого дня
+            for (let i = 0; i < startDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'day-cell';
+                grid.appendChild(emptyCell);
+            }
+            
+            // Дни месяца
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateKey = formatDateKey(year, month, day);
+                const dayData = markedDays[dateKey];
+                const dayType = dayData?.type || dayData; // Поддержка старого формата
+                
+                const cell = document.createElement('div');
+                cell.className = `day-cell flex items-center justify-center text-sm font-medium cursor-pointer transition-all duration-150 ${
+                    dayType === 'work' ? 'work-day text-white' :
+                    dayType === 'overtime' ? 'overtime-day text-white' :
+                    'bg-zinc-800 text-zinc-300'
+                }`;
+                cell.textContent = day;
+                cell.dataset.date = dateKey;
+                
+                // События для тача
+                cell.addEventListener('touchstart', handleTouchStart, { passive: true });
+                cell.addEventListener('touchend', handleTouchEnd);
+                cell.addEventListener('touchmove', handleTouchMove, { passive: true });
+                
+                // События для мыши
+                cell.addEventListener('mousedown', handleMouseDown);
+                cell.addEventListener('mouseup', handleMouseUp);
+                cell.addEventListener('mouseleave', handleMouseCancel);
+                
+                grid.appendChild(cell);
+            }
+        }
+
+        // Обработка начала касания
+        function handleTouchStart(e) {
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            isTouchMoved = false;
+            isLongPress = false;
+            
+            const cell = e.currentTarget;
+            
+            longPressTimer = setTimeout(() => {
+                if (!isTouchMoved) {
+                    isLongPress = true;
+                    handleLongPress(cell.dataset.date);
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50);
+                    }
+                }
+            }, 500);
+        }
+
+        // Обработка движения пальца
+        function handleTouchMove(e) {
+            const touch = e.touches[0];
+            const deltaX = Math.abs(touch.clientX - touchStartX);
+            const deltaY = Math.abs(touch.clientY - touchStartY);
+            
+            // Если палец сдвинулся больше порога - это скролл
+            if (deltaX > SCROLL_THRESHOLD || deltaY > SCROLL_THRESHOLD) {
+                isTouchMoved = true;
+                clearTimeout(longPressTimer);
+            }
+        }
+
+        // Обработка окончания касания
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            clearTimeout(longPressTimer);
+            
+            // Если был скролл - не делаем ничего
+            if (isTouchMoved) {
+                return;
+            }
+            
+            if (!isLongPress) {
+                toggleDay(e.currentTarget.dataset.date, 'work');
+            }
+        }
+
+        // Обработка мыши
+        function handleMouseDown(e) {
+            isLongPress = false;
+            const cell = e.currentTarget;
+            
+            longPressTimer = setTimeout(() => {
+                isLongPress = true;
+                handleLongPress(cell.dataset.date);
+            }, 500);
+        }
+
+        function handleMouseUp(e) {
+            clearTimeout(longPressTimer);
+            
+            if (!isLongPress) {
+                toggleDay(e.currentTarget.dataset.date, 'work');
+            }
+        }
+
+        function handleMouseCancel() {
+            clearTimeout(longPressTimer);
+        }
+
+        // Обработка долгого нажатия
+        function handleLongPress(dateKey) {
+            if (!settings.hourlyRate) {
+                showToast('Сначала укажите ставку в час', 'error');
+                openSettings(true);
+                return;
+            }
+            
+            const dayData = markedDays[dateKey];
+            
+            // Если день уже помечен - убираем
+            if (dayData) {
+                delete markedDays[dateKey];
+                saveData();
+                renderCalendar();
+                updateStats();
+                return;
+            }
+            
+            // Открываем модалку выбора подработки
+            selectedDateKey = dateKey;
+            openOvertimeModal();
+        }
+
+        // Переключение дня
+        function toggleDay(dateKey, type) {
+            if (!settings.hourlyRate) {
+                showToast('Сначала укажите ставку в час', 'error');
+                openSettings(true);
+                return;
+            }
+            
+            const currentData = markedDays[dateKey];
+            
+            if (currentData) {
+                // Если день уже помечен (любым типом) - убираем отметку
+                delete markedDays[dateKey];
+            } else {
+                // Если день пустой - помечаем как рабочий
+                markedDays[dateKey] = {
+                    type: 'work',
+                    hours: settings.hoursPerDay
+                };
+            }
+            
+            saveData();
+            renderCalendar();
+            updateStats();
+        }
+
+        // Обновление статистики
+        function updateStats() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            let workDays = 0;
+            let overtimeDays = 0;
+            let totalHours = 0;
+            let totalSalary = 0;
+            
+            Object.keys(markedDays).forEach(key => {
+                const [y, m] = key.split('-').map(Number);
+                if (y === year && m === month + 1) {
+                    const dayData = markedDays[key];
+                    
+                    // Поддержка старого формата
+                    if (typeof dayData === 'string') {
+                        const hours = settings.hoursPerDay;
+                        const rate = settings.hourlyRate || 0;
+                        
+                        if (dayData === 'work') {
+                            workDays++;
+                            totalHours += hours;
+                            totalSalary += hours * rate;
+                        } else if (dayData === 'overtime') {
+                            overtimeDays++;
+                            totalHours += hours;
+                            totalSalary += hours * rate;
+                        }
+                    } else {
+                        const hours = dayData.hours || settings.hoursPerDay;
+
+                        // Динамическая ставка: чтобы изменения в настройках/шаблонах пересчитывали сумму
+                        let rate = settings.hourlyRate || 0;
+                        if (dayData.type === 'overtime') {
+                            const tid = dayData.templateId || 'base';
+                            if (tid !== 'base') {
+                                const template = templates.find(t => t.id === tid);
+                                rate = template?.rate ?? (settings.hourlyRate || 0);
+                            }
+                        }
+
+                        // Fallback для совсем старых записей
+                        if ((!rate || rate <= 0) && typeof dayData.rate === 'number') {
+                            rate = dayData.rate;
+                        }
+                        
+                        if (dayData.type === 'work') {
+                            workDays++;
+                        } else if (dayData.type === 'overtime') {
+                            overtimeDays++;
+                        }
+                        
+                        totalHours += hours;
+                        totalSalary += hours * rate;
+                    }
+                }
+            });
+            
+            document.getElementById('workDaysCount').textContent = workDays;
+            document.getElementById('overtimeDaysCount').textContent = overtimeDays;
+            document.getElementById('totalHours').textContent = totalHours;
+            document.getElementById('totalSalary').textContent = totalSalary.toLocaleString('ru-RU') + ' ₽';
+        }
+
+        // Навигация по месяцам
+        function prevMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+            updateStats();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+            updateStats();
+        }
+
+        // Очистка месяца
+        function clearMonth() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            let hasMarkedDays = false;
+            
+            Object.keys(markedDays).forEach(key => {
+                const [y, m] = key.split('-').map(Number);
+                if (y === year && m === month + 1) {
+                    hasMarkedDays = true;
+                    delete markedDays[key];
+                }
+            });
+            
+            if (hasMarkedDays) {
+                saveData();
+                renderCalendar();
+                updateStats();
+                showToast('Месяц очищен', 'success');
+            } else {
+                showToast('Нет отмеченных дней', 'error');
+            }
+        }
+
+        // Настройки
+        function openSettings(isRequired = false) {
+            const hourlyRateInput = document.getElementById('hourlyRate');
+            const hoursPerDayInput = document.getElementById('hoursPerDay');
+
+            hourlyRateInput.value = settings.hourlyRate || '';
+            hoursPerDayInput.value = settings.hoursPerDay || 12;
+
+            // UI режимы
+            const closeBtn = document.getElementById('closeSettingsBtn');
+            const title = document.getElementById('settingsTitle');
+            const hint = document.getElementById('settingsHint');
+            const advanced = document.getElementById('settingsAdvanced');
+
+            const requiredMode = isRequired && !settings.hourlyRate;
+
+            if (requiredMode) {
+                // Первый вход: только ставка
+                title.textContent = 'Ставка в час';
+                hint.classList.remove('hidden');
+                advanced.classList.add('hidden');
+                closeBtn.classList.add('hidden');
+
+                // Фокус на поле
+                setTimeout(() => hourlyRateInput.focus(), 50);
+            } else {
+                title.textContent = 'Настройки';
+                hint.classList.add('hidden');
+                advanced.classList.remove('hidden');
+                closeBtn.classList.remove('hidden');
+                renderTemplatesList();
+            }
+
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            if (!settings.hourlyRate) {
+                showToast('Укажите ставку в час', 'error');
+                document.getElementById('hourlyRate').classList.add('border-red-500');
+                return;
+            }
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function saveSettings() {
+            const rate = parseFloat(document.getElementById('hourlyRate').value);
+            const hoursPerDayEl = document.getElementById('hoursPerDay');
+            const advancedVisible = !document.getElementById('settingsAdvanced').classList.contains('hidden');
+            const hours = advancedVisible ? (parseFloat(hoursPerDayEl.value) || 12) : (settings.hoursPerDay || 12);
+            
+            if (!rate || rate <= 0) {
+                showToast('Введите корректную ставку', 'error');
+                document.getElementById('hourlyRate').classList.add('border-red-500');
+                return;
+            }
+            
+            document.getElementById('hourlyRate').classList.remove('border-red-500');
+            
+            settings.hourlyRate = rate;
+            settings.hoursPerDay = hours;
+            
+            saveData();
+            document.getElementById('settingsModal').classList.add('hidden');
+            renderCalendar();
+            updateStats();
+            showToast(advancedVisible ? 'Настройки сохранены' : 'Ставка сохранена', 'success');
+        }
+
+        // Шаблоны должностей
+        function renderTemplatesList() {
+            const container = document.getElementById('templatesList');
+            
+            if (templates.length === 0) {
+                container.innerHTML = '<p class="text-zinc-500 text-sm text-center py-2">Нет добавленных шаблонов</p>';
+                return;
+            }
+            
+            container.innerHTML = templates.map(t => `
+                <div class="template-item flex items-center justify-between bg-zinc-800 p-3 card cursor-pointer hover:bg-zinc-700/60" onclick="openEditTemplate('${t.id}')">
+                    <div>
+                        <p class="font-medium text-sm">${t.name}</p>
+                        <p class="text-zinc-400 text-xs">${t.rate} ₽/час</p>
+                    </div>
+                    <button type="button" aria-label="Удалить шаблон" onclick="event.stopPropagation(); deleteTemplate('${t.id}')" class="btn-icon bg-zinc-900/0 hover:bg-zinc-700/60 text-zinc-500 hover:text-red-400 transition">
+                        <span class="material-icons-round text-[22px] leading-none">delete</span>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function openAddTemplate() {
+            editingTemplateId = null;
+            document.getElementById('addTemplateTitle').textContent = 'Новый шаблон';
+            const btn = document.getElementById('templateSaveBtn');
+            btn.textContent = 'Добавить';
+
+            document.getElementById('templateName').value = '';
+            document.getElementById('templateRate').value = '';
+            document.getElementById('addTemplateModal').classList.remove('hidden');
+        }
+
+        function openEditTemplate(id) {
+            const t = templates.find(x => x.id === id);
+            if (!t) return;
+
+            editingTemplateId = id;
+            document.getElementById('addTemplateTitle').textContent = 'Редактировать шаблон';
+            const btn = document.getElementById('templateSaveBtn');
+            btn.textContent = 'Сохранить';
+
+            document.getElementById('templateName').value = t.name;
+            document.getElementById('templateRate').value = t.rate;
+            document.getElementById('addTemplateModal').classList.remove('hidden');
+        }
+
+        function closeAddTemplate() {
+            document.getElementById('addTemplateModal').classList.add('hidden');
+            editingTemplateId = null;
+        }
+
+        function addTemplate() {
+            const name = document.getElementById('templateName').value.trim();
+            const rate = parseFloat(document.getElementById('templateRate').value);
+            
+            if (!name) {
+                showToast('Введите название шаблона', 'error');
+                return;
+            }
+            
+            if (!rate || rate <= 0) {
+                showToast('Введите корректную ставку', 'error');
+                return;
+            }
+
+            // Режим редактирования
+            if (editingTemplateId) {
+                const idx = templates.findIndex(t => t.id === editingTemplateId);
+                if (idx !== -1) {
+                    templates[idx].name = name;
+                    templates[idx].rate = rate;
+                }
+
+                saveData();
+                renderTemplatesList();
+
+                // Если открыта модалка подработки — обновим список ставок
+                if (!document.getElementById('overtimeModal').classList.contains('hidden')) {
+                    renderOvertimeTemplates();
+                }
+
+                // Пересчёт итогов, т.к. ставка могла измениться
+                updateStats();
+
+                closeAddTemplate();
+                showToast('Шаблон сохранён', 'success');
+                return;
+            }
+            
+            // Добавление нового шаблона
+            templates.push({
+                id: Date.now().toString(),
+                name,
+                rate
+            });
+            
+            saveData();
+            renderTemplatesList();
+            closeAddTemplate();
+            showToast('Шаблон добавлен', 'success');
+        }
+
+        function deleteTemplate(id) {
+            templates = templates.filter(t => t.id !== id);
+            saveData();
+            renderTemplatesList();
+
+            // Если открыта модалка подработки — обновим список (и ставки)
+            if (!document.getElementById('overtimeModal').classList.contains('hidden')) {
+                renderOvertimeTemplates();
+            }
+
+            // Пересчёт итогов: удалённый шаблон мог участвовать в сумме
+            updateStats();
+
+            showToast('Шаблон удалён', 'success');
+        }
+
+        // Модалка подработки
+        function openOvertimeModal() {
+            selectedTemplateId = null;
+            document.getElementById('overtimeHours').value = settings.hoursPerDay;
+            renderOvertimeTemplates();
+            document.getElementById('overtimeModal').classList.remove('hidden');
+        }
+
+        function closeOvertimeModal() {
+            document.getElementById('overtimeModal').classList.add('hidden');
+            selectedDateKey = null;
+            selectedTemplateId = null;
+        }
+
+        function renderOvertimeTemplates() {
+            const container = document.getElementById('overtimeTemplatesList');
+            
+            // Базовый шаблон + пользовательские
+            const allTemplates = [
+                { id: 'base', name: 'Базовая ставка', rate: settings.hourlyRate },
+                ...templates
+            ];
+            
+            container.innerHTML = allTemplates.map(t => `
+                <div onclick="selectTemplate('${t.id}')" 
+                    class="template-item flex items-center justify-between bg-zinc-800 p-3 card cursor-pointer hover:bg-zinc-700 ${selectedTemplateId === t.id ? 'template-selected' : ''}"
+                    id="template-${t.id}">
+                    <div>
+                        <p class="font-medium text-sm">${t.name}</p>
+                        <p class="text-zinc-400 text-xs">${t.rate} ₽/час</p>
+                    </div>
+                    ${selectedTemplateId === t.id ? '<span class="material-icons-round text-amber-500">check_circle</span>' : ''}
+                </div>
+            `).join('');
+            
+            // По умолчанию выбираем базовый
+            if (!selectedTemplateId) {
+                selectTemplate('base');
+            }
+        }
+
+        function selectTemplate(id) {
+            selectedTemplateId = id;
+            renderOvertimeTemplates();
+        }
+
+        function confirmOvertime() {
+            const hours = parseFloat(document.getElementById('overtimeHours').value);
+            
+            if (!hours || hours <= 0) {
+                showToast('Введите количество часов', 'error');
+                return;
+            }
+            
+            if (!selectedTemplateId) {
+                showToast('Выберите шаблон', 'error');
+                return;
+            }
+            
+            markedDays[selectedDateKey] = {
+                type: 'overtime',
+                templateId: selectedTemplateId,
+                hours: hours
+            };
+            
+            saveData();
+            renderCalendar();
+            updateStats();
+            closeOvertimeModal();
+            showToast('Подработка добавлена', 'success');
+        }
+    </script>
+</body>
+</html>
