@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Квест Любви</title>
+    <title>Я тебя люблю</title>
 
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ec407a' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E" />
 
@@ -37,10 +37,8 @@
             user-select: text;
         }
 
-        /* Ensure Tailwind's `hidden` works even before the CDN script boots */
         .hidden { display: none !important; }
 
-        /* Prevent flashing the default hint before progress is applied */
         html.app-preload #hintScreen,
         html.app-preload #bgHearts {
             display: none !important;
@@ -58,11 +56,8 @@
             will-change: background-position;
         }
 
-        /* Mobile perf: static gradient (less jank in some mobile browsers) */
         @media (max-width: 640px) {
-            body {
-                animation: none;
-            }
+            body { animation: none; }
             .glass {
                 backdrop-filter: blur(10px);
                 -webkit-backdrop-filter: blur(10px);
@@ -79,7 +74,6 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* Glass */
         .glass {
             background: rgba(255, 255, 255, 0.45);
             backdrop-filter: blur(18px);
@@ -96,7 +90,6 @@
             transition: none;
         }
 
-        /* Без дополнительных эффектов при фокусе (минимализм) */
         .glass-input:focus {
             background: rgba(255, 255, 255, 0.55);
             border-color: rgba(236, 64, 122, 0.18);
@@ -119,35 +112,16 @@
             box-shadow: none;
         }
 
-        /* Rounded icon badge inside buttons */
-        .btn-icon-badge {
-            width: 40px;
-            height: 40px;
-            border-radius: 9999px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.22);
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
-        }
-
-        /* Material Symbols */
         .material-symbols-rounded {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
             color: var(--love-600);
         }
-        .ms-filled {
-            /* Legacy helper (kept for compatibility) */
-            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 48 !important;
-        }
 
-        /* Heart stacking: filled heart + outline heart (keeps clean silhouette) */
         .ms-fill {
             font-variation-settings: 'FILL' 1, 'wght' 350, 'GRAD' 0, 'opsz' 48 !important;
         }
+
         .ms-outline {
-            /* Тоньше контур, чтобы не «съедал» форму */
             font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 48 !important;
         }
 
@@ -157,26 +131,21 @@
             width: fit-content;
             margin-inline: auto;
         }
-        .hero-heart-stack > span {
-            grid-area: 1 / 1;
-        }
 
-        /* Big heart icon (above hint/success titles) */
+        .hero-heart-stack > span { grid-area: 1 / 1; }
+
         .hero-heart {
             font-size: clamp(50px, 6.2vw, 64px);
             line-height: 1;
             display: block;
         }
 
-        .heart-fill { color: var(--love-600); }
-        /* Контур и заливка одного цвета */
+        .heart-fill,
         .heart-outline { color: var(--love-600); }
 
-        /* Typo colors */
         .text-love { color: var(--love-800); }
         .text-love-light { color: var(--love-700); }
 
-        /* Background hearts */
         #bgHearts {
             contain: layout paint;
             transition: opacity 320ms ease;
@@ -185,11 +154,8 @@
         .floating-heart {
             position: absolute;
             opacity: 0.10;
-            animation-name: floatHeart;
-            animation-timing-function: ease-in-out;
-            animation-iteration-count: infinite;
+            animation: floatHeart 10s ease-in-out infinite;
             pointer-events: none;
-            filter: blur(0px);
             will-change: transform;
             transform: translate3d(0, 0, 0);
         }
@@ -201,7 +167,6 @@
 
         .heart-path { fill: rgba(236, 64, 122, 0.95); }
 
-        /* Animations */
         .shake { animation: shake 0.5s ease-in-out; }
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
@@ -221,11 +186,8 @@
             50% { box-shadow: 0 0 60px rgba(236, 64, 122, 0.34); }
         }
 
-        /* Mobile: avoid animating box-shadow (can be janky) */
         @media (max-width: 640px) {
-            .success-glow {
-                animation: successGlowMobile 520ms ease-in-out;
-            }
+            .success-glow { animation: successGlowMobile 520ms ease-in-out; }
             @keyframes successGlowMobile {
                 0%, 100% { transform: translateZ(0) scale(1); }
                 50% { transform: translateZ(0) scale(1.012); }
@@ -238,13 +200,11 @@
             50% { transform: scale(1.12); }
         }
 
-        /* Small brand chip */
         .brand-chip {
             background: rgba(255, 255, 255, 0.48);
             border: none;
         }
 
-        /* Tutorial tooltip (first visit) */
         .tutorial-tooltip {
             position: absolute;
             left: calc(100% + 10px);
@@ -256,13 +216,11 @@
             line-height: 1;
             white-space: nowrap;
             color: rgba(173, 20, 87, 0.95);
-
             background: rgba(255, 255, 255, 0.62);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
             border: 1px solid rgba(255, 255, 255, 0.75);
             box-shadow: 0 10px 30px rgba(236, 64, 122, 0.18);
-
             opacity: 0;
             pointer-events: none;
             transition: opacity 240ms ease, transform 240ms ease;
@@ -295,7 +253,6 @@
             -webkit-backdrop-filter: blur(14px);
         }
 
-        /* Finale */
         .fade-out {
             opacity: 0;
             transform: translateY(10px);
@@ -306,9 +263,8 @@
             opacity: 0;
             transition: opacity 420ms ease;
         }
-        #finaleScreen.finale-visible {
-            opacity: 1;
-        }
+
+        #finaleScreen.finale-visible { opacity: 1; }
 
         .finale-item {
             opacity: 0;
@@ -321,40 +277,25 @@
             letter-spacing: -0.02em;
         }
 
-        .finale-heart {
-            margin-top: 14px;
-        }
-        .finale-heart .hero-heart {
-            font-size: clamp(44px, 7vw, 60px);
-        }
+        .finale-heart { margin-top: 14px; }
+        .finale-heart .hero-heart { font-size: clamp(44px, 7vw, 60px); }
 
         @keyframes finaleWordIn {
-            0% {
-                opacity: 0;
-                transform: translate3d(0, 22px, 0) scale(0.98);
-            }
-            65% {
-                opacity: 1;
-                transform: translate3d(0, 0, 0) scale(1.04);
-            }
-            100% {
-                opacity: 1;
-                transform: translate3d(0, 0, 0) scale(1);
-            }
+            0% { opacity: 0; transform: translate3d(0, 22px, 0) scale(0.98); }
+            65% { opacity: 1; transform: translate3d(0, 0, 0) scale(1.04); }
+            100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
         }
 
         .finale-item.show {
             animation: finaleWordIn 860ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* Reduce motion */
         @media (prefers-reduced-motion: reduce) {
             body { animation: none !important; }
             .floating-heart { animation: none !important; }
             .fade-in, .success-glow, .pulse-heart, .shake { animation: none !important; }
             .tutorial-tooltip { transition: none !important; }
             #finaleScreen, .fade-out { transition: none !important; }
-
             .finale-item {
                 opacity: 1 !important;
                 transform: none !important;
@@ -365,23 +306,16 @@
 </head>
 <body class="flex items-center justify-center p-4 relative overflow-hidden" onclick="hideHelpTooltip(true)">
 
-    <!-- Динамический фон с сердечками -->
     <div id="bgHearts" class="absolute inset-0 overflow-hidden" style="display:none"></div>
 
-    <!-- Экран с подсказкой и вводом кода -->
     <div id="hintScreen" class="glass rounded-3xl p-8 md:p-12 max-w-lg w-full text-center fade-in relative z-10" style="display:none">
-
-        <!-- Иконка-инструкция (верхний левый угол) + тултип (первый вход) -->
         <div class="absolute top-4 left-4 z-20">
             <div class="relative">
-                <button id="helpBtn" type="button"
-                        onclick="openInstruction()"
+                <button id="helpBtn" type="button" onclick="openInstruction()"
                         class="brand-chip w-10 h-10 rounded-full inline-flex items-center justify-center"
-                        aria-label="Как ввести код?"
-                        title="Как ввести код?">
+                        aria-label="Как ввести код?" title="Как ввести код?">
                     <span class="material-symbols-rounded text-[20px]">help</span>
                 </button>
-
                 <div id="helpTooltip" class="tutorial-tooltip tt-hidden hidden" role="tooltip" aria-hidden="true" onclick="dismissHelpTooltip(event)">
                     Как ввести код?
                 </div>
@@ -394,52 +328,33 @@
                 <span class="material-symbols-rounded ms-outline hero-heart heart-outline" aria-hidden="true">favorite</span>
             </div>
             <h1 id="hintTitle" class="text-3xl md:text-4xl font-semibold text-love mb-2 tracking-tight">Подсказка #1</h1>
-            <p id="hintText" class="text-love-light/90 text-lg leading-relaxed">
-                Рядом с мелодией.
-            </p>
+            <p id="hintText" class="text-love-light/90 text-lg leading-relaxed">Рядом с мелодией.</p>
         </div>
 
         <div class="mb-3">
             <div class="flex justify-center gap-3 md:gap-4 mb-2" id="codeInputs">
-                <input type="text"
-                       id="code1"
-                       maxlength="2"
-                       inputmode="numeric"
-                       autocomplete="one-time-code"
-                       placeholder="00"
+                <input id="code1" type="text" maxlength="2" inputmode="numeric" autocomplete="one-time-code" placeholder="00"
                        class="glass-input w-16 h-16 md:w-20 md:h-20 rounded-2xl text-center text-2xl font-medium text-love placeholder-pink-300/50">
-                <input type="text"
-                       id="code2"
-                       maxlength="2"
-                       inputmode="numeric"
-                       autocomplete="one-time-code"
-                       placeholder="00"
+                <input id="code2" type="text" maxlength="2" inputmode="numeric" autocomplete="one-time-code" placeholder="00"
                        class="glass-input w-16 h-16 md:w-20 md:h-20 rounded-2xl text-center text-2xl font-medium text-love placeholder-pink-300/50">
-                <input type="text"
-                       id="code3"
-                       maxlength="2"
-                       inputmode="numeric"
-                       autocomplete="one-time-code"
-                       placeholder="00"
+                <input id="code3" type="text" maxlength="2" inputmode="numeric" autocomplete="one-time-code" placeholder="00"
                        class="glass-input w-16 h-16 md:w-20 md:h-20 rounded-2xl text-center text-2xl font-medium text-love placeholder-pink-300/50">
             </div>
             <p id="errorMsg" class="text-rose-500 text-sm h-5 transition-opacity"></p>
         </div>
 
         <button onclick="checkCode()"
-                class="glass-btn px-10 py-4 rounded-2xl font-semibold w-full shadow-lg flex items-center justify-center mx-auto text-lg">
+                class="glass-btn px-10 py-5 rounded-2xl font-semibold w-full shadow-lg flex items-center justify-center mx-auto text-lg">
             Проверить код
         </button>
     </div>
 
-    <!-- Финал -->
     <div id="finaleScreen" class="fixed inset-0 hidden z-[60] flex items-center justify-center p-6" aria-hidden="true">
         <div class="absolute inset-0 bg-white/25"></div>
         <div class="relative z-10 text-center">
             <div class="finale-item finale-word text-love font-semibold" data-finale="0">Я</div>
             <div class="finale-item finale-word text-love font-semibold" data-finale="1">Тебя</div>
             <div class="finale-item finale-word text-love font-semibold" data-finale="2">Люблю</div>
-
             <div class="finale-item finale-heart" data-finale="3" aria-hidden="true">
                 <div class="hero-heart-stack pulse-heart">
                     <span class="material-symbols-rounded ms-fill hero-heart heart-fill">favorite</span>
@@ -449,19 +364,17 @@
         </div>
     </div>
 
-    <!-- Модальное окно: инструкция -->
     <div id="instructionModal" class="fixed inset-0 hidden z-50" aria-hidden="true">
         <div class="absolute inset-0 bg-black/20" onclick="closeInstruction()"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
             <div class="glass rounded-3xl p-6 md:p-8 max-w-lg w-full text-left">
                 <div class="flex items-start justify-between gap-4 mb-4">
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="material-symbols-rounded">help</span>
-                            <h2 class="text-love text-xl font-semibold">Как ввести код</h2>
-                        </div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="material-symbols-rounded">help</span>
+                        <h2 class="text-love text-xl font-semibold">Как ввести код</h2>
                     </div>
-                    <button type="button" onclick="closeInstruction()" class="brand-chip w-10 h-10 rounded-full inline-flex items-center justify-center" aria-label="Закрыть">
+                    <button type="button" onclick="closeInstruction()"
+                            class="brand-chip w-10 h-10 rounded-full inline-flex items-center justify-center" aria-label="Закрыть">
                         <span class="material-symbols-rounded">close</span>
                     </button>
                 </div>
@@ -482,68 +395,26 @@
         </div>
     </div>
 
-    <!-- Экран успеха -->
-    <div id="successScreen" class="glass rounded-3xl p-8 md:p-12 max-w-lg w-full text-center hidden relative z-10">
-
-
-        <div class="mb-8">
-            <div class="hero-heart-stack mb-5 pulse-heart">
-                <span class="material-symbols-rounded ms-fill hero-heart heart-fill" aria-hidden="true">favorite</span>
-                <span class="material-symbols-rounded ms-outline hero-heart heart-outline" aria-hidden="true">favorite</span>
-            </div>
-            <h1 class="text-3xl md:text-4xl font-semibold text-love mb-4 tracking-tight">Чудесно!</h1>
-            <div class="glass rounded-2xl p-6 mb-6 border border-pink-200/50">
-                <div class="flex items-center justify-center gap-2 mb-3">
-                    <span class="material-symbols-rounded text-2xl">location_on</span>
-                    <span class="text-love font-medium">Подсказка #2</span>
-                </div>
-                <p class="text-love-light/90 text-lg leading-relaxed">
-                    Там, куда редко падает свет и не заглядывает швабра.
-                </p>
-            </div>
-        </div>
-
-        <button onclick="resetQuest()"
-                class="glass-btn px-8 py-3 rounded-2xl font-medium shadow-lg flex items-center justify-center gap-2 mx-auto">
-            <span class="material-symbols-rounded text-2xl" style="color: white;">replay</span>
-            Начать сначала
-        </button>
-    </div>
-
     <script>
-        // Disable pinch-to-zoom (mobile)
-        // Note: some browsers may still allow zoom via accessibility settings.
         (function disablePinchZoom() {
             let lastTouchEnd = 0;
-
-            document.addEventListener('touchstart', (e) => {
-                if (e.touches && e.touches.length > 1) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-
-            document.addEventListener('touchmove', (e) => {
-                if (e.touches && e.touches.length > 1) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-
-            // Also prevent double-tap zoom
+            const blockIfPinch = (e) => {
+                if (e.touches && e.touches.length > 1) e.preventDefault();
+            };
+            document.addEventListener('touchstart', blockIfPinch, { passive: false });
+            document.addEventListener('touchmove', blockIfPinch, { passive: false });
             document.addEventListener('touchend', (e) => {
                 const now = Date.now();
-                if (now - lastTouchEnd <= 300) {
-                    e.preventDefault();
-                }
+                if (now - lastTouchEnd <= 300) e.preventDefault();
                 lastTouchEnd = now;
             }, { passive: false });
-
-            // Prevent gesture events (Safari/iOS)
             document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
             document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
             document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
         })();
 
-        // Шаги квеста: подсказка + код для перехода к следующей
+        const $ = (id) => document.getElementById(id);
+
         const steps = [
             { title: 'Подсказка #1', text: 'Рядом с мелодией.', code: ['32', '37', '57'] },
             { title: 'Подсказка #2', text: 'В тени шкафа.', code: ['13', '26', '50'] },
@@ -555,8 +426,11 @@
         ];
 
         const PROGRESS_KEY = 'loveQuest_progress_v2';
+        const HELP_TOOLTIP_KEY = 'loveQuest_helpTooltipSeen_v1';
+        const HELP_TOOLTIP_TRANSITION_MS = 260;
 
         let currentHintIndex = 0;
+        let finaleRunning = false;
 
         function loadProgress() {
             try {
@@ -564,400 +438,253 @@
                 if (!raw) return { step: 0, finale: false };
                 const data = JSON.parse(raw);
                 const step = Number.isFinite(data?.step) ? data.step : 0;
-                const finale = !!data?.finale;
                 return {
                     step: Math.min(Math.max(step, 0), steps.length - 1),
-                    finale
+                    finale: !!data?.finale
                 };
-            } catch (e) {
+            } catch {
                 return { step: 0, finale: false };
             }
         }
 
         function saveProgress({ step = currentHintIndex, finale = false } = {}) {
-            try {
-                localStorage.setItem(PROGRESS_KEY, JSON.stringify({ step, finale }));
-            } catch (e) {}
+            try { localStorage.setItem(PROGRESS_KEY, JSON.stringify({ step, finale })); } catch {}
         }
 
-        function clearProgress() {
-            try { localStorage.removeItem(PROGRESS_KEY); } catch (e) {}
+        function getHeartsCount() {
+            return window.matchMedia('(max-width: 640px)').matches ? 28 : 42;
         }
 
-        // Генерация фоновых сердечек
         function createHearts(count = 36) {
-            const root = document.getElementById('bgHearts');
+            const root = $('bgHearts');
             if (!root) return;
-
             root.innerHTML = '';
 
-            const heartSVG = (size) => `
-                <svg class="floating-heart" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">
-                    <path class="heart-path" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                </svg>
-            `.trim();
-
             const rand = (min, max) => Math.random() * (max - min) + min;
+            const heartSVG = (size) => (
+                `<svg class="floating-heart" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
+                `<path class="heart-path" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>` +
+                `</svg>`
+            );
 
             for (let i = 0; i < count; i++) {
                 const size = Math.round(rand(12, 44));
-                const wrapper = document.createElement('div');
-                wrapper.innerHTML = heartSVG(size);
+                root.insertAdjacentHTML('beforeend', heartSVG(size));
+                const svg = root.lastElementChild;
 
-                const svg = wrapper.firstElementChild;
-                const top = rand(-5, 95);
-                const left = rand(-5, 95);
-                const delay = rand(0, 6).toFixed(2);
-                const duration = rand(7, 13).toFixed(2);
-                const opacity = rand(0.06, 0.16).toFixed(2);
-                const rotate = rand(-14, 14).toFixed(1);
-
-                svg.style.top = `${top}%`;
-                svg.style.left = `${left}%`;
-                svg.style.opacity = opacity;
-                svg.style.animationDelay = `${delay}s`;
-                svg.style.animationDuration = `${duration}s`;
-                svg.style.setProperty('--r', `${rotate}deg`);
-
-                root.appendChild(svg);
+                svg.style.top = `${rand(-5, 95)}%`;
+                svg.style.left = `${rand(-5, 95)}%`;
+                svg.style.opacity = rand(0.06, 0.16).toFixed(2);
+                svg.style.animationDelay = `${rand(0, 6).toFixed(2)}s`;
+                svg.style.animationDuration = `${rand(7, 13).toFixed(2)}s`;
+                svg.style.setProperty('--r', `${rand(-14, 14).toFixed(1)}deg`);
             }
         }
 
-        // Автофокус на следующее поле
-        document.querySelectorAll('#codeInputs input').forEach((input, index, inputs) => {
+        function applyHint(index) {
+            const h = steps[index] || steps[0];
+            const titleEl = $('hintTitle');
+            const textEl = $('hintText');
+            if (titleEl) titleEl.textContent = h.title;
+            if (textEl) textEl.textContent = h.text;
+        }
+
+        const codeEls = [$('code1'), $('code2'), $('code3')];
+        const clearCode = () => {
+            codeEls.forEach(el => { if (el) el.value = ''; });
+            codeEls[0]?.focus();
+        };
+
+        codeEls.forEach((input, index) => {
+            if (!input) return;
+
             input.addEventListener('input', (e) => {
-                // Оставляем только цифры
                 e.target.value = e.target.value.replace(/\D/g, '');
-
-                // Переход к следующему полю
-                if (e.target.value.length === 2 && index < inputs.length - 1) {
-                    inputs[index + 1].focus();
-                }
-
-                // Скрываем ошибку при вводе
-                document.getElementById('errorMsg').textContent = '';
+                if (e.target.value.length === 2 && index < codeEls.length - 1) codeEls[index + 1].focus();
+                const err = $('errorMsg');
+                if (err) err.textContent = '';
             });
 
-            // Переход назад при удалении
             input.addEventListener('keydown', (e) => {
-                if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
-                    inputs[index - 1].focus();
-                }
-
-                // Проверка по Enter
-                if (e.key === 'Enter') {
-                    checkCode();
-                }
+                if (e.key === 'Backspace' && e.target.value === '' && index > 0) codeEls[index - 1].focus();
+                if (e.key === 'Enter') checkCode();
             });
         });
 
-        let finaleRunning = false;
-
-        function startFinale(restored = false) {
-            if (finaleRunning) return;
-            finaleRunning = true;
-
-            // сохраняем, что квест завершён
-            saveProgress({ step: steps.length - 1, finale: true });
-
-            hideHelpTooltip(true);
-            closeInstruction();
-
-            const hintScreen = document.getElementById('hintScreen');
-            const bg = document.getElementById('bgHearts');
-            const finale = document.getElementById('finaleScreen');
-            const errorMsg = document.getElementById('errorMsg');
-            if (errorMsg) errorMsg.textContent = '';
-
-            const showFinale = () => {
-                if (!finale) return;
-                finale.classList.remove('hidden');
-                finale.setAttribute('aria-hidden', 'false');
-                requestAnimationFrame(() => finale.classList.add('finale-visible'));
-
-                const items = Array.from(finale.querySelectorAll('.finale-item'))
-                    .sort((a, b) => Number(a.dataset.finale) - Number(b.dataset.finale));
-
-                // Сбрасываем состояние/анимацию (чтобы корректно проигрывалось при повторном запуске)
-                items.forEach(el => {
-                    el.classList.remove('show');
-                    el.style.animation = 'none';
-                    void el.offsetHeight;
-                    el.style.animation = '';
-                });
-
-                // Последовательное появление (слова + сердечко)
-                const base = 180;
-                const step = 800;
-                items.forEach((el, i) => {
-                    window.setTimeout(() => el.classList.add('show'), base + i * step);
-                });
-            };
-
-            // Восстановление после перезагрузки: ничего не показываем кроме финала
-            if (restored) {
-                if (hintScreen) {
-                    hintScreen.classList.remove('fade-in');
-                    hintScreen.classList.remove('fade-out');
-                    hintScreen.style.display = 'none';
-                }
-                // В финале фоновые сердечки оставляем (как на всём сайте)
-                if (bg) {
-                    bg.style.opacity = '';
-                    // display будет включён в DOMContentLoaded
-                }
-                showFinale();
-                return;
-            }
-
-            // Обычный финал: плавно убираем основной интерфейс
-            hintScreen?.classList.remove('fade-in');
-            hintScreen?.classList.add('fade-out');
-            // В финале фоновые сердечки оставляем (как на всём сайте)
-            if (bg) bg.style.opacity = '';
-
-            // Показываем финал поверх
-            window.setTimeout(showFinale, 340);
-        }
-
-        function checkCode() {
-            const code1 = document.getElementById('code1').value;
-            const code2 = document.getElementById('code2').value;
-            const code3 = document.getElementById('code3').value;
-
-            const enteredCode = [code1, code2, code3];
-            const codeInputsContainer = document.getElementById('codeInputs');
-            const errorMsg = document.getElementById('errorMsg');
-
-            // Проверка на заполненность
-            if (!code1 || !code2 || !code3) {
-                errorMsg.textContent = 'Заполни все поля';
-                codeInputsContainer.classList.add('shake');
-                setTimeout(() => codeInputsContainer.classList.remove('shake'), 500);
-                return;
-            }
-
-            const correctCode = steps[currentHintIndex]?.code || [];
-
-            // Проверка кода
-            if (enteredCode.every((val, i) => val === correctCode[i])) {
-                const hintScreen = document.getElementById('hintScreen');
-
-                // Последний шаг → финал
-                if (currentHintIndex >= steps.length - 1) {
-                    startFinale();
-                    return;
-                }
-
-                // Переход на следующую подсказку (без смены экрана)
-                currentHintIndex += 1;
-                applyHint(currentHintIndex);
-                saveProgress({ step: currentHintIndex, finale: false });
-
-                hintScreen.classList.add('success-glow');
-                setTimeout(() => hintScreen.classList.remove('success-glow'), 900);
-
-                // Очистка полей
-                document.getElementById('code1').value = '';
-                document.getElementById('code2').value = '';
-                document.getElementById('code3').value = '';
-                document.getElementById('code1').focus();
-                errorMsg.textContent = '';
-            } else {
-                errorMsg.textContent = 'Неверный код. Попробуй снова';
-                codeInputsContainer.classList.add('shake');
-                setTimeout(() => codeInputsContainer.classList.remove('shake'), 500);
-
-                // Очистка полей
-                document.getElementById('code1').value = '';
-                document.getElementById('code2').value = '';
-                document.getElementById('code3').value = '';
-                document.getElementById('code1').focus();
-            }
-        }
-
-        function resetQuest() {
-            // Ensure UI is visible even if called very early
-            document.documentElement.classList.remove('app-preload');
-
-            const hintScreen = document.getElementById('hintScreen');
-            const bg = document.getElementById('bgHearts');
-            const finale = document.getElementById('finaleScreen');
-
-            clearProgress();
-
-            // Закрываем финал (если открыт)
-            if (finale && !finale.classList.contains('hidden')) {
-                finale.classList.remove('finale-visible');
-                finale.setAttribute('aria-hidden', 'true');
-                window.setTimeout(() => {
-                    finale.classList.add('hidden');
-                }, 420);
-            }
-
-            finaleRunning = false;
-
-            if (bg) {
-                bg.style.opacity = '';
-                bg.style.display = '';
-            }
-            if (hintScreen) {
-                hintScreen.classList.remove('fade-out');
-                hintScreen.style.display = '';
-            }
-
-            currentHintIndex = 0;
-            applyHint(currentHintIndex);
-            saveProgress({ step: currentHintIndex, finale: false });
-
-            // Очистка полей
-            document.getElementById('code1').value = '';
-            document.getElementById('code2').value = '';
-            document.getElementById('code3').value = '';
-            document.getElementById('errorMsg').textContent = '';
-
-            hintScreen?.classList.remove('success-glow');
-
-            setTimeout(() => document.getElementById('code1').focus(), 50);
-        }
-
-        const HELP_TOOLTIP_KEY = 'loveQuest_helpTooltipSeen_v1';
-        const HELP_TOOLTIP_TRANSITION_MS = 260;
-
         function showHelpTooltipOnce() {
-            const tooltip = document.getElementById('helpTooltip');
-            const btn = document.getElementById('helpBtn');
-            if (!tooltip || !btn) return;
-
-            const alreadySeen = localStorage.getItem(HELP_TOOLTIP_KEY) === '1';
-            if (alreadySeen) return;
+            const tooltip = $('helpTooltip');
+            if (!tooltip || !$('helpBtn')) return;
+            if (localStorage.getItem(HELP_TOOLTIP_KEY) === '1') return;
 
             tooltip.classList.remove('hidden');
             tooltip.classList.remove('tt-visible');
             tooltip.classList.add('tt-hidden');
             tooltip.setAttribute('aria-hidden', 'false');
 
-            // Плавное появление
             requestAnimationFrame(() => {
                 tooltip.classList.remove('tt-hidden');
                 tooltip.classList.add('tt-visible');
             });
 
-            // Автоскрытие через несколько секунд
-            window.setTimeout(() => {
-                hideHelpTooltip(true);
-            }, 5500);
+            window.setTimeout(() => hideHelpTooltip(true), 5500);
         }
 
         function hideHelpTooltip(markSeen = false) {
-            const tooltip = document.getElementById('helpTooltip');
+            const tooltip = $('helpTooltip');
             if (!tooltip) return;
 
             tooltip.classList.remove('tt-visible');
             tooltip.classList.add('tt-hidden');
             tooltip.setAttribute('aria-hidden', 'true');
 
-            window.setTimeout(() => {
-                tooltip.classList.add('hidden');
-            }, HELP_TOOLTIP_TRANSITION_MS);
+            window.setTimeout(() => tooltip.classList.add('hidden'), HELP_TOOLTIP_TRANSITION_MS);
 
             if (markSeen) {
-                try { localStorage.setItem(HELP_TOOLTIP_KEY, '1'); } catch (e) {}
+                try { localStorage.setItem(HELP_TOOLTIP_KEY, '1'); } catch {}
             }
         }
 
         function dismissHelpTooltip(e) {
-            // Позволяет закрыть по клику на сам тултип
             e.preventDefault();
             e.stopPropagation();
             hideHelpTooltip(true);
         }
 
-        function applyHint(index) {
-            const titleEl = document.getElementById('hintTitle');
-            const textEl = document.getElementById('hintText');
-            if (!titleEl || !textEl) return;
-
-            const h = steps[index] || steps[0];
-            titleEl.textContent = h.title;
-            textEl.textContent = h.text;
-        }
-
-        function getHeartsCount() {
-            // меньше на телефонах для плавности
-            return window.matchMedia('(max-width: 640px)').matches ? 28 : 42;
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // Apply progress BEFORE showing UI (prevents flash of step #1)
-            const progress = loadProgress();
-            currentHintIndex = progress.step;
-            applyHint(currentHintIndex);
-
-            createHearts(getHeartsCount());
-
-            // If already finished — show finale immediately (still hidden by app-preload / inline styles)
-            if (progress.finale) {
-                startFinale(true);
-            }
-
-            // Reveal UI only after we applied the correct hint (next frame)
-            requestAnimationFrame(() => {
-                // Show background hearts always (including finale)
-                const bg = document.getElementById('bgHearts');
-                if (bg) bg.style.display = '';
-
-                document.documentElement.classList.remove('app-preload');
-
-                // If finale is running, no need to show hint UI
-                if (progress.finale) return;
-
-                const hintScreen = document.getElementById('hintScreen');
-                if (hintScreen) hintScreen.style.display = '';
-
-                document.getElementById('code1').focus();
-                showHelpTooltipOnce();
-
-                // Убираем fade-in после первого появления, чтобы он не перезапускался при смене подсказок
-                window.setTimeout(() => {
-                    hintScreen?.classList.remove('fade-in');
-                }, 650);
-            });
-        });
-
-        // Надёжно сохраняем прогресс при сворачивании/закрытии (особенно важно на мобилках)
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                saveProgress({ step: currentHintIndex, finale: finaleRunning });
-            }
-        });
-        window.addEventListener('beforeunload', () => {
-            saveProgress({ step: currentHintIndex, finale: finaleRunning });
-        });
-
         function openInstruction() {
             hideHelpTooltip(true);
-            const modal = document.getElementById('instructionModal');
+            const modal = $('instructionModal');
             if (!modal) return;
             modal.classList.remove('hidden');
             modal.setAttribute('aria-hidden', 'false');
         }
 
         function closeInstruction() {
-            const modal = document.getElementById('instructionModal');
+            const modal = $('instructionModal');
             if (!modal) return;
             modal.classList.add('hidden');
             modal.setAttribute('aria-hidden', 'true');
         }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeInstruction();
-                hideHelpTooltip(true);
+        function startFinale(restored = false) {
+            if (finaleRunning) return;
+            finaleRunning = true;
+            saveProgress({ step: steps.length - 1, finale: true });
+
+            hideHelpTooltip(true);
+            closeInstruction();
+
+            const hintScreen = $('hintScreen');
+            if (hintScreen) {
+                hintScreen.classList.remove('fade-in');
+                hintScreen.classList.remove('fade-out');
+                hintScreen.style.display = 'none';
             }
+
+            const err = $('errorMsg');
+            if (err) err.textContent = '';
+
+            const finale = $('finaleScreen');
+            if (!finale) return;
+
+            finale.classList.remove('hidden');
+            finale.setAttribute('aria-hidden', 'false');
+            requestAnimationFrame(() => finale.classList.add('finale-visible'));
+
+            const items = Array.from(finale.querySelectorAll('.finale-item'))
+                .sort((a, b) => Number(a.dataset.finale) - Number(b.dataset.finale));
+
+            items.forEach(el => {
+                el.classList.remove('show');
+                el.style.animation = 'none';
+                void el.offsetHeight;
+                el.style.animation = '';
+            });
+
+            if (restored) {
+                items.forEach((el, i) => window.setTimeout(() => el.classList.add('show'), 180 + i * 800));
+                return;
+            }
+
+            window.setTimeout(() => items.forEach((el, i) => window.setTimeout(() => el.classList.add('show'), 180 + i * 800)), 340);
+        }
+
+        function checkCode() {
+            const entered = codeEls.map(el => (el?.value || ''));
+            const codeInputsContainer = $('codeInputs');
+            const errorMsg = $('errorMsg');
+
+            if (entered.some(v => !v)) {
+                if (errorMsg) errorMsg.textContent = 'Заполни все поля';
+                codeInputsContainer?.classList.add('shake');
+                window.setTimeout(() => codeInputsContainer?.classList.remove('shake'), 500);
+                return;
+            }
+
+            const correct = steps[currentHintIndex]?.code || [];
+
+            if (entered.every((val, i) => val === correct[i])) {
+                if (currentHintIndex >= steps.length - 1) {
+                    startFinale(false);
+                    return;
+                }
+
+                currentHintIndex += 1;
+                applyHint(currentHintIndex);
+                saveProgress({ step: currentHintIndex, finale: false });
+
+                const hintScreen = $('hintScreen');
+                hintScreen?.classList.add('success-glow');
+                window.setTimeout(() => hintScreen?.classList.remove('success-glow'), 900);
+
+                clearCode();
+                if (errorMsg) errorMsg.textContent = '';
+                return;
+            }
+
+            if (errorMsg) errorMsg.textContent = 'Неверный код. Попробуй снова';
+            codeInputsContainer?.classList.add('shake');
+            window.setTimeout(() => codeInputsContainer?.classList.remove('shake'), 500);
+            clearCode();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const progress = loadProgress();
+            currentHintIndex = progress.step;
+            applyHint(currentHintIndex);
+            createHearts(getHeartsCount());
+
+            if (progress.finale) startFinale(true);
+
+            requestAnimationFrame(() => {
+                const bg = $('bgHearts');
+                if (bg) bg.style.display = '';
+
+                document.documentElement.classList.remove('app-preload');
+
+                if (progress.finale) return;
+                const hintScreen = $('hintScreen');
+                if (hintScreen) hintScreen.style.display = '';
+
+                codeEls[0]?.focus();
+                showHelpTooltipOnce();
+                window.setTimeout(() => hintScreen?.classList.remove('fade-in'), 650);
+            });
         });
 
-        // Resize handling (debounced) to avoid jank on mobile (address bar triggers resize)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) saveProgress({ step: currentHintIndex, finale: finaleRunning });
+        });
+
+        window.addEventListener('beforeunload', () => {
+            saveProgress({ step: currentHintIndex, finale: finaleRunning });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            closeInstruction();
+            hideHelpTooltip(true);
+        });
+
         let resizeTimer = null;
         let lastW = window.innerWidth;
         let lastIsMobile = window.matchMedia('(max-width: 640px)').matches;
@@ -969,10 +696,7 @@
                 const w = window.innerWidth;
                 const isMobile = window.matchMedia('(max-width: 640px)').matches;
 
-                const breakpointChanged = isMobile !== lastIsMobile;
-                const widthChangedEnough = Math.abs(w - lastW) > 80;
-
-                if (breakpointChanged || widthChangedEnough) {
+                if (isMobile !== lastIsMobile || Math.abs(w - lastW) > 80) {
                     createHearts(getHeartsCount());
                     lastW = w;
                     lastIsMobile = isMobile;
