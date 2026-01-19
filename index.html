@@ -166,7 +166,10 @@
         .text-love-light { color: var(--love-700); }
 
         /* Background hearts */
-        #bgHearts { contain: layout paint; }
+        #bgHearts {
+            contain: layout paint;
+            transition: opacity 320ms ease;
+        }
 
         .floating-heart {
             position: absolute;
@@ -281,12 +284,61 @@
             -webkit-backdrop-filter: blur(14px);
         }
 
+        /* Finale */
+        .fade-out {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 320ms ease, transform 320ms ease;
+        }
+
+        #finaleScreen {
+            opacity: 0;
+            transition: opacity 420ms ease;
+        }
+        #finaleScreen.finale-visible {
+            opacity: 1;
+        }
+
+        .finale-word {
+            opacity: 0;
+            transform: translate3d(0, 22px, 0) scale(0.98);
+            font-size: clamp(46px, 9vw, 78px);
+            letter-spacing: -0.02em;
+            will-change: transform, opacity;
+        }
+
+        @keyframes finaleWordIn {
+            0% {
+                opacity: 0;
+                transform: translate3d(0, 22px, 0) scale(0.98);
+            }
+            65% {
+                opacity: 1;
+                transform: translate3d(0, 0, 0) scale(1.04);
+            }
+            100% {
+                opacity: 1;
+                transform: translate3d(0, 0, 0) scale(1);
+            }
+        }
+
+        .finale-word.show {
+            animation: finaleWordIn 860ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
         /* Reduce motion */
         @media (prefers-reduced-motion: reduce) {
             body { animation: none !important; }
             .floating-heart { animation: none !important; }
             .fade-in, .success-glow, .pulse-heart, .shake { animation: none !important; }
             .tutorial-tooltip { transition: none !important; }
+            #finaleScreen, .fade-out { transition: none !important; }
+
+            .finale-word {
+                opacity: 1 !important;
+                transform: none !important;
+                animation: none !important;
+            }
         }
     </style>
 </head>
@@ -357,6 +409,16 @@
                 class="glass-btn px-10 py-4 rounded-2xl font-semibold w-full shadow-lg flex items-center justify-center mx-auto text-lg">
             Проверить код
         </button>
+    </div>
+
+    <!-- Финал -->
+    <div id="finaleScreen" class="fixed inset-0 hidden z-[60] flex items-center justify-center p-6" aria-hidden="true">
+        <div class="absolute inset-0 bg-white/25"></div>
+        <div class="relative z-10 text-center">
+            <div class="finale-word text-love font-semibold" data-word="0">Я</div>
+            <div class="finale-word text-love font-semibold" data-word="1">Тебя</div>
+            <div class="finale-word text-love font-semibold" data-word="2">Люблю</div>
+        </div>
     </div>
 
     <!-- Модальное окно: инструкция -->
@@ -432,7 +494,35 @@
             { title: 'Подсказка #7', text: 'Ооочень горячо', code: ['15', '42', '79'] }
         ];
 
+        const PROGRESS_KEY = 'loveQuest_progress_v2';
+
         let currentHintIndex = 0;
+
+        function loadProgress() {
+            try {
+                const raw = localStorage.getItem(PROGRESS_KEY);
+                if (!raw) return { step: 0, finale: false };
+                const data = JSON.parse(raw);
+                const step = Number.isFinite(data?.step) ? data.step : 0;
+                const finale = !!data?.finale;
+                return {
+                    step: Math.min(Math.max(step, 0), steps.length - 1),
+                    finale
+                };
+            } catch (e) {
+                return { step: 0, finale: false };
+            }
+        }
+
+        function saveProgress({ step = currentHintIndex, finale = false } = {}) {
+            try {
+                localStorage.setItem(PROGRESS_KEY, JSON.stringify({ step, finale }));
+            } catch (e) {}
+        }
+
+        function clearProgress() {
+            try { localStorage.removeItem(PROGRESS_KEY); } catch (e) {}
+        }
 
         // Генерация фоновых сердечек
         function createHearts(count = 36) {
@@ -501,6 +591,55 @@
             });
         });
 
+        let finaleRunning = false;
+
+        function startFinale() {
+            if (finaleRunning) return;
+            finaleRunning = true;
+
+            // сохраняем, что квест завершён
+            saveProgress({ step: steps.length - 1, finale: true });
+
+            hideHelpTooltip(true);
+            closeInstruction();
+
+            const hintScreen = document.getElementById('hintScreen');
+            const bg = document.getElementById('bgHearts');
+            const finale = document.getElementById('finaleScreen');
+            const errorMsg = document.getElementById('errorMsg');
+            if (errorMsg) errorMsg.textContent = '';
+
+            // Плавно убираем основной интерфейс
+            hintScreen?.classList.add('fade-out');
+            if (bg) bg.style.opacity = '0';
+
+            // Показываем финал поверх
+            window.setTimeout(() => {
+                if (!finale) return;
+                finale.classList.remove('hidden');
+                finale.setAttribute('aria-hidden', 'false');
+                requestAnimationFrame(() => finale.classList.add('finale-visible'));
+
+                const words = Array.from(finale.querySelectorAll('.finale-word'));
+
+                // Сбрасываем состояние/анимацию (чтобы корректно проигрывалось при повторном запуске)
+                words.forEach(w => {
+                    w.classList.remove('show');
+                    // reset animation
+                    w.style.animation = 'none';
+                    // force reflow
+                    void w.offsetHeight;
+                    w.style.animation = '';
+                });
+
+                // Последовательное появление
+                const delays = [180, 980, 1780];
+                words.forEach((w, i) => {
+                    window.setTimeout(() => w.classList.add('show'), delays[i]);
+                });
+            }, 340);
+        }
+
         function checkCode() {
             const code1 = document.getElementById('code1').value;
             const code2 = document.getElementById('code2').value;
@@ -524,26 +663,26 @@
             if (enteredCode.every((val, i) => val === correctCode[i])) {
                 const hintScreen = document.getElementById('hintScreen');
 
-                // Если уже на последней подсказке — просто подсветим успех и не будем менять текст
+                // Последний шаг → финал
                 if (currentHintIndex >= steps.length - 1) {
-                    hintScreen.classList.add('success-glow');
-                    setTimeout(() => hintScreen.classList.remove('success-glow'), 900);
-                    errorMsg.textContent = '';
-                } else {
-                    // Переход на следующую подсказку (без смены экрана)
-                    currentHintIndex += 1;
-                    applyHint(currentHintIndex);
-
-                    hintScreen.classList.add('success-glow');
-                    setTimeout(() => hintScreen.classList.remove('success-glow'), 900);
-
-                    // Очистка полей
-                    document.getElementById('code1').value = '';
-                    document.getElementById('code2').value = '';
-                    document.getElementById('code3').value = '';
-                    document.getElementById('code1').focus();
-                    errorMsg.textContent = '';
+                    startFinale();
+                    return;
                 }
+
+                // Переход на следующую подсказку (без смены экрана)
+                currentHintIndex += 1;
+                applyHint(currentHintIndex);
+                saveProgress({ step: currentHintIndex, finale: false });
+
+                hintScreen.classList.add('success-glow');
+                setTimeout(() => hintScreen.classList.remove('success-glow'), 900);
+
+                // Очистка полей
+                document.getElementById('code1').value = '';
+                document.getElementById('code2').value = '';
+                document.getElementById('code3').value = '';
+                document.getElementById('code1').focus();
+                errorMsg.textContent = '';
             } else {
                 errorMsg.textContent = 'Неверный код. Попробуй снова';
                 codeInputsContainer.classList.add('shake');
@@ -559,9 +698,28 @@
 
         function resetQuest() {
             const hintScreen = document.getElementById('hintScreen');
+            const bg = document.getElementById('bgHearts');
+            const finale = document.getElementById('finaleScreen');
+
+            clearProgress();
+
+            // Закрываем финал (если открыт)
+            if (finale && !finale.classList.contains('hidden')) {
+                finale.classList.remove('finale-visible');
+                finale.setAttribute('aria-hidden', 'true');
+                window.setTimeout(() => {
+                    finale.classList.add('hidden');
+                }, 420);
+            }
+
+            finaleRunning = false;
+
+            if (bg) bg.style.opacity = '';
+            hintScreen?.classList.remove('fade-out');
 
             currentHintIndex = 0;
             applyHint(currentHintIndex);
+            saveProgress({ step: currentHintIndex, finale: false });
 
             // Очистка полей
             document.getElementById('code1').value = '';
@@ -569,7 +727,7 @@
             document.getElementById('code3').value = '';
             document.getElementById('errorMsg').textContent = '';
 
-            hintScreen.classList.remove('success-glow');
+            hintScreen?.classList.remove('success-glow');
 
             setTimeout(() => document.getElementById('code1').focus(), 50);
         }
@@ -643,7 +801,17 @@
 
         window.onload = () => {
             createHearts(getHeartsCount());
+
+            const progress = loadProgress();
+            currentHintIndex = progress.step;
             applyHint(currentHintIndex);
+
+            // Если уже был финал — сразу показываем финальную сцену
+            if (progress.finale) {
+                startFinale();
+                return;
+            }
+
             document.getElementById('code1').focus();
             showHelpTooltipOnce();
 
