@@ -48,36 +48,6 @@
         }
         html.app-preload #hintScreen { pointer-events: none; }
 
-        /* Boot loader (covers any potential flash on slow devices)
-           IMPORTANT: uses its own layout CSS (doesn't rely on Tailwind being ready) */
-        #bootLoader {
-            position: fixed;
-            inset: 0;
-            z-index: 80;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 240ms ease;
-        }
-        #bootLoader .boot-backdrop {
-            position: absolute;
-            inset: 0;
-            background: rgba(255, 255, 255, 0.25);
-        }
-        #bootLoader .boot-card {
-            position: relative;
-            z-index: 1;
-            border-radius: 24px;
-            padding: 28px 32px;
-        }
-        html.app-preload #bootLoader {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
         body {
             min-height: 100vh;
             background: radial-gradient(1200px 600px at 20% 10%, rgba(255, 255, 255, 0.8), transparent 55%),
@@ -395,22 +365,11 @@
 </head>
 <body class="flex items-center justify-center p-4 relative overflow-hidden" onclick="hideHelpTooltip(true)">
 
-    <!-- Boot loader (shown only during app-preload) -->
-    <div id="bootLoader" aria-hidden="false">
-        <div class="boot-backdrop" aria-hidden="true"></div>
-        <div class="boot-card glass text-center">
-            <div class="hero-heart-stack pulse-heart">
-                <span class="material-symbols-rounded ms-fill hero-heart heart-fill" aria-hidden="true">favorite</span>
-                <span class="material-symbols-rounded ms-outline hero-heart heart-outline" aria-hidden="true">favorite</span>
-            </div>
-        </div>
-    </div>
-
     <!-- Динамический фон с сердечками -->
-    <div id="bgHearts" class="absolute inset-0 overflow-hidden"></div>
+    <div id="bgHearts" class="absolute inset-0 overflow-hidden" style="display:none"></div>
 
     <!-- Экран с подсказкой и вводом кода -->
-    <div id="hintScreen" class="glass rounded-3xl p-8 md:p-12 max-w-lg w-full text-center fade-in relative z-10">
+    <div id="hintScreen" class="glass rounded-3xl p-8 md:p-12 max-w-lg w-full text-center fade-in relative z-10" style="display:none">
 
         <!-- Иконка-инструкция (верхний левый угол) + тултип (первый вход) -->
         <div class="absolute top-4 left-4 z-20">
@@ -745,7 +704,7 @@
                 // В финале фоновые сердечки оставляем (как на всём сайте)
                 if (bg) {
                     bg.style.opacity = '';
-                    bg.style.display = '';
+                    // display будет включён в DOMContentLoaded
                 }
                 showFinale();
                 return;
@@ -820,14 +779,6 @@
         function resetQuest() {
             // Ensure UI is visible even if called very early
             document.documentElement.classList.remove('app-preload');
-            // Ensure loader is gone
-            const loader = document.getElementById('bootLoader');
-            if (loader) {
-                loader.style.opacity = '0';
-                loader.style.pointerEvents = 'none';
-                loader.classList.add('hidden');
-                loader.setAttribute('aria-hidden', 'true');
-            }
 
             const hintScreen = document.getElementById('hintScreen');
             const bg = document.getElementById('bgHearts');
@@ -937,23 +888,6 @@
             return window.matchMedia('(max-width: 640px)').matches ? 28 : 42;
         }
 
-        function hideBootLoader() {
-            const loader = document.getElementById('bootLoader');
-            if (!loader) return;
-            // If already hidden, do nothing
-            if (loader.dataset.hidden === '1') return;
-            loader.dataset.hidden = '1';
-
-            loader.style.opacity = '0';
-            loader.style.pointerEvents = 'none';
-
-            // Remove from accessibility tree after transition
-            window.setTimeout(() => {
-                loader.classList.add('hidden');
-                loader.setAttribute('aria-hidden', 'true');
-            }, 260);
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
             // Apply progress BEFORE showing UI (prevents flash of step #1)
             const progress = loadProgress();
@@ -962,26 +896,29 @@
 
             createHearts(getHeartsCount());
 
-            // Start hiding loader first, then reveal UI
-            hideBootLoader();
-
-            // If already finished — show finale immediately (still under loader during preload)
+            // If already finished — show finale immediately (still hidden by app-preload / inline styles)
             if (progress.finale) {
                 startFinale(true);
             }
 
             // Reveal UI only after we applied the correct hint (next frame)
             requestAnimationFrame(() => {
+                // Show background hearts always (including finale)
+                const bg = document.getElementById('bgHearts');
+                if (bg) bg.style.display = '';
+
                 document.documentElement.classList.remove('app-preload');
 
-                // If finale is running, no need to focus inputs / show tooltip
+                // If finale is running, no need to show hint UI
                 if (progress.finale) return;
+
+                const hintScreen = document.getElementById('hintScreen');
+                if (hintScreen) hintScreen.style.display = '';
 
                 document.getElementById('code1').focus();
                 showHelpTooltipOnce();
 
                 // Убираем fade-in после первого появления, чтобы он не перезапускался при смене подсказок
-                const hintScreen = document.getElementById('hintScreen');
                 window.setTimeout(() => {
                     hintScreen?.classList.remove('fade-in');
                 }, 650);
