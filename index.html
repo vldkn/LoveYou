@@ -44,6 +44,17 @@
         }
         html.app-preload #hintScreen { pointer-events: none; }
 
+        /* Boot loader (covers any potential flash on slow devices) */
+        #bootLoader {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 240ms ease;
+        }
+        html.app-preload #bootLoader {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         body {
             min-height: 100vh;
             background: radial-gradient(1200px 600px at 20% 10%, rgba(255, 255, 255, 0.8), transparent 55%),
@@ -350,6 +361,17 @@
     </style>
 </head>
 <body class="flex items-center justify-center p-4 relative overflow-hidden" onclick="hideHelpTooltip(true)">
+
+    <!-- Boot loader (shown only during app-preload) -->
+    <div id="bootLoader" class="fixed inset-0 z-[80] flex items-center justify-center" aria-hidden="false">
+        <div class="absolute inset-0 bg-white/25"></div>
+        <div class="glass rounded-3xl px-8 py-7 text-center">
+            <div class="hero-heart-stack pulse-heart">
+                <span class="material-symbols-rounded ms-fill hero-heart heart-fill" aria-hidden="true">favorite</span>
+                <span class="material-symbols-rounded ms-outline hero-heart heart-outline" aria-hidden="true">favorite</span>
+            </div>
+        </div>
+    </div>
 
     <!-- Динамический фон с сердечками -->
     <div id="bgHearts" class="absolute inset-0 overflow-hidden"></div>
@@ -738,6 +760,14 @@
         function resetQuest() {
             // Ensure UI is visible even if called very early
             document.documentElement.classList.remove('app-preload');
+            // Ensure loader is gone
+            const loader = document.getElementById('bootLoader');
+            if (loader) {
+                loader.style.opacity = '0';
+                loader.style.pointerEvents = 'none';
+                loader.classList.add('hidden');
+                loader.setAttribute('aria-hidden', 'true');
+            }
 
             const hintScreen = document.getElementById('hintScreen');
             const bg = document.getElementById('bgHearts');
@@ -841,6 +871,23 @@
             return window.matchMedia('(max-width: 640px)').matches ? 28 : 42;
         }
 
+        function hideBootLoader() {
+            const loader = document.getElementById('bootLoader');
+            if (!loader) return;
+            // If already hidden, do nothing
+            if (loader.dataset.hidden === '1') return;
+            loader.dataset.hidden = '1';
+
+            loader.style.opacity = '0';
+            loader.style.pointerEvents = 'none';
+
+            // Remove from accessibility tree after transition
+            window.setTimeout(() => {
+                loader.classList.add('hidden');
+                loader.setAttribute('aria-hidden', 'true');
+            }, 260);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             // Apply progress BEFORE showing UI (prevents flash of step #1)
             const progress = loadProgress();
@@ -853,12 +900,14 @@
             if (progress.finale) {
                 // Reveal UI layer first (otherwise finale opacity transition could be skipped)
                 document.documentElement.classList.remove('app-preload');
+                hideBootLoader();
                 startFinale();
                 return;
             }
 
             // Reveal UI only after we applied the correct hint
             document.documentElement.classList.remove('app-preload');
+            hideBootLoader();
 
             document.getElementById('code1').focus();
             showHelpTooltipOnce();
