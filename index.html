@@ -37,18 +37,41 @@
             user-select: text;
         }
 
+        /* Ensure Tailwind's `hidden` works even before the CDN script boots */
+        .hidden { display: none !important; }
+
         /* Prevent flashing the default hint before progress is applied */
         html.app-preload #hintScreen,
         html.app-preload #bgHearts {
+            display: none !important;
             opacity: 0 !important;
         }
         html.app-preload #hintScreen { pointer-events: none; }
 
-        /* Boot loader (covers any potential flash on slow devices) */
+        /* Boot loader (covers any potential flash on slow devices)
+           IMPORTANT: uses its own layout CSS (doesn't rely on Tailwind being ready) */
         #bootLoader {
+            position: fixed;
+            inset: 0;
+            z-index: 80;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
             opacity: 0;
             pointer-events: none;
             transition: opacity 240ms ease;
+        }
+        #bootLoader .boot-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.25);
+        }
+        #bootLoader .boot-card {
+            position: relative;
+            z-index: 1;
+            border-radius: 24px;
+            padding: 28px 32px;
         }
         html.app-preload #bootLoader {
             opacity: 1;
@@ -317,12 +340,22 @@
             opacity: 1;
         }
 
-        .finale-word {
+        .finale-item {
             opacity: 0;
             transform: translate3d(0, 22px, 0) scale(0.98);
+            will-change: transform, opacity;
+        }
+
+        .finale-word {
             font-size: clamp(46px, 9vw, 78px);
             letter-spacing: -0.02em;
-            will-change: transform, opacity;
+        }
+
+        .finale-heart {
+            margin-top: 14px;
+        }
+        .finale-heart .hero-heart {
+            font-size: clamp(44px, 7vw, 60px);
         }
 
         @keyframes finaleWordIn {
@@ -340,7 +373,7 @@
             }
         }
 
-        .finale-word.show {
+        .finale-item.show {
             animation: finaleWordIn 860ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
@@ -352,7 +385,7 @@
             .tutorial-tooltip { transition: none !important; }
             #finaleScreen, .fade-out { transition: none !important; }
 
-            .finale-word {
+            .finale-item {
                 opacity: 1 !important;
                 transform: none !important;
                 animation: none !important;
@@ -363,9 +396,9 @@
 <body class="flex items-center justify-center p-4 relative overflow-hidden" onclick="hideHelpTooltip(true)">
 
     <!-- Boot loader (shown only during app-preload) -->
-    <div id="bootLoader" class="fixed inset-0 z-[80] flex items-center justify-center" aria-hidden="false">
-        <div class="absolute inset-0 bg-white/25"></div>
-        <div class="glass rounded-3xl px-8 py-7 text-center">
+    <div id="bootLoader" aria-hidden="false">
+        <div class="boot-backdrop" aria-hidden="true"></div>
+        <div class="boot-card glass text-center">
             <div class="hero-heart-stack pulse-heart">
                 <span class="material-symbols-rounded ms-fill hero-heart heart-fill" aria-hidden="true">favorite</span>
                 <span class="material-symbols-rounded ms-outline hero-heart heart-outline" aria-hidden="true">favorite</span>
@@ -444,9 +477,16 @@
     <div id="finaleScreen" class="fixed inset-0 hidden z-[60] flex items-center justify-center p-6" aria-hidden="true">
         <div class="absolute inset-0 bg-white/25"></div>
         <div class="relative z-10 text-center">
-            <div class="finale-word text-love font-semibold" data-word="0">Я</div>
-            <div class="finale-word text-love font-semibold" data-word="1">Тебя</div>
-            <div class="finale-word text-love font-semibold" data-word="2">Люблю</div>
+            <div class="finale-item finale-word text-love font-semibold" data-finale="0">Я</div>
+            <div class="finale-item finale-word text-love font-semibold" data-finale="1">Тебя</div>
+            <div class="finale-item finale-word text-love font-semibold" data-finale="2">Люблю</div>
+
+            <div class="finale-item finale-heart" data-finale="3" aria-hidden="true">
+                <div class="hero-heart-stack pulse-heart">
+                    <span class="material-symbols-rounded ms-fill hero-heart heart-fill">favorite</span>
+                    <span class="material-symbols-rounded ms-outline hero-heart heart-outline">favorite</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -654,7 +694,7 @@
 
         let finaleRunning = false;
 
-        function startFinale() {
+        function startFinale(restored = false) {
             if (finaleRunning) return;
             finaleRunning = true;
 
@@ -670,35 +710,55 @@
             const errorMsg = document.getElementById('errorMsg');
             if (errorMsg) errorMsg.textContent = '';
 
-            // Плавно убираем основной интерфейс
-            hintScreen?.classList.add('fade-out');
-            if (bg) bg.style.opacity = '0';
-
-            // Показываем финал поверх
-            window.setTimeout(() => {
+            const showFinale = () => {
                 if (!finale) return;
                 finale.classList.remove('hidden');
                 finale.setAttribute('aria-hidden', 'false');
                 requestAnimationFrame(() => finale.classList.add('finale-visible'));
 
-                const words = Array.from(finale.querySelectorAll('.finale-word'));
+                const items = Array.from(finale.querySelectorAll('.finale-item'))
+                    .sort((a, b) => Number(a.dataset.finale) - Number(b.dataset.finale));
 
                 // Сбрасываем состояние/анимацию (чтобы корректно проигрывалось при повторном запуске)
-                words.forEach(w => {
-                    w.classList.remove('show');
-                    // reset animation
-                    w.style.animation = 'none';
-                    // force reflow
-                    void w.offsetHeight;
-                    w.style.animation = '';
+                items.forEach(el => {
+                    el.classList.remove('show');
+                    el.style.animation = 'none';
+                    void el.offsetHeight;
+                    el.style.animation = '';
                 });
 
-                // Последовательное появление
-                const delays = [180, 980, 1780];
-                words.forEach((w, i) => {
-                    window.setTimeout(() => w.classList.add('show'), delays[i]);
+                // Последовательное появление (слова + сердечко)
+                const base = 180;
+                const step = 800;
+                items.forEach((el, i) => {
+                    window.setTimeout(() => el.classList.add('show'), base + i * step);
                 });
-            }, 340);
+            };
+
+            // Восстановление после перезагрузки: ничего не показываем кроме финала
+            if (restored) {
+                if (hintScreen) {
+                    hintScreen.classList.remove('fade-in');
+                    hintScreen.classList.remove('fade-out');
+                    hintScreen.style.display = 'none';
+                }
+                // В финале фоновые сердечки оставляем (как на всём сайте)
+                if (bg) {
+                    bg.style.opacity = '';
+                    bg.style.display = '';
+                }
+                showFinale();
+                return;
+            }
+
+            // Обычный финал: плавно убираем основной интерфейс
+            hintScreen?.classList.remove('fade-in');
+            hintScreen?.classList.add('fade-out');
+            // В финале фоновые сердечки оставляем (как на всём сайте)
+            if (bg) bg.style.opacity = '';
+
+            // Показываем финал поверх
+            window.setTimeout(showFinale, 340);
         }
 
         function checkCode() {
@@ -786,8 +846,14 @@
 
             finaleRunning = false;
 
-            if (bg) bg.style.opacity = '';
-            hintScreen?.classList.remove('fade-out');
+            if (bg) {
+                bg.style.opacity = '';
+                bg.style.display = '';
+            }
+            if (hintScreen) {
+                hintScreen.classList.remove('fade-out');
+                hintScreen.style.display = '';
+            }
 
             currentHintIndex = 0;
             applyHint(currentHintIndex);
@@ -896,27 +962,30 @@
 
             createHearts(getHeartsCount());
 
-            // If already finished — show finale immediately
-            if (progress.finale) {
-                // Reveal UI layer first (otherwise finale opacity transition could be skipped)
-                document.documentElement.classList.remove('app-preload');
-                hideBootLoader();
-                startFinale();
-                return;
-            }
-
-            // Reveal UI only after we applied the correct hint
-            document.documentElement.classList.remove('app-preload');
+            // Start hiding loader first, then reveal UI
             hideBootLoader();
 
-            document.getElementById('code1').focus();
-            showHelpTooltipOnce();
+            // If already finished — show finale immediately (still under loader during preload)
+            if (progress.finale) {
+                startFinale(true);
+            }
 
-            // Убираем fade-in после первого появления, чтобы он не перезапускался при смене подсказок
-            const hintScreen = document.getElementById('hintScreen');
-            window.setTimeout(() => {
-                hintScreen?.classList.remove('fade-in');
-            }, 650);
+            // Reveal UI only after we applied the correct hint (next frame)
+            requestAnimationFrame(() => {
+                document.documentElement.classList.remove('app-preload');
+
+                // If finale is running, no need to focus inputs / show tooltip
+                if (progress.finale) return;
+
+                document.getElementById('code1').focus();
+                showHelpTooltipOnce();
+
+                // Убираем fade-in после первого появления, чтобы он не перезапускался при смене подсказок
+                const hintScreen = document.getElementById('hintScreen');
+                window.setTimeout(() => {
+                    hintScreen?.classList.remove('fade-in');
+                }, 650);
+            });
         });
 
         // Надёжно сохраняем прогресс при сворачивании/закрытии (особенно важно на мобилках)
